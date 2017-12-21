@@ -1,4 +1,7 @@
+import codeanticode.syphon.*;
 import processing.sound.*;
+
+SyphonServer server;
 
 FFT fft;
 AudioIn in;
@@ -13,10 +16,12 @@ Shoji[][] shojis = new Shoji[xval][yval];
 
 //////////////////////////////////////////////////////////////////////
 void setup() {
-  size(1296, 576);
+  size(1296, 576, P3D);
   colorMode(HSB);
 
   noStroke();
+
+  server = new SyphonServer(this, "Processing Syphon");
 
   textAlign(CENTER, CENTER);
 
@@ -58,6 +63,8 @@ void draw() {
       shojis[i][j].display();
     }
   }
+  
+  server.sendScreen();
 }
 
 
