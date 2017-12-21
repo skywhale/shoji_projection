@@ -7,6 +7,12 @@ FFT fft;
 AudioIn in;
 Amplitude rms;
 
+enum Scene {
+  TEST,
+  FFT_BARS
+}
+Scene currentScene = Scene.TEST;
+
 int bands = 256;
 float[] spectrum = new float[bands];
 
@@ -20,27 +26,22 @@ void setup() {
   colorMode(HSB);
 
   noStroke();
-
-  server = new SyphonServer(this, "Processing Syphon");
-
-  textAlign(CENTER, CENTER);
-
   fill(0);
 
-  // Create an Input stream which is routed into the Amplitude analyzer
-  fft = new FFT(this, bands);
+  server = new SyphonServer(this, "Processing Syphon");
+  println("Started Syphon server.");
+  
   in = new AudioIn(this, 0);
-
-  // start the Audio Input
+  println("Started Syphon server.");
   in.start();
-
-  // create a new Amplitude analyzer
-  rms = new Amplitude(this);
+  println("Started audio input.");
 
   // Patch the input to an volume analyzer
+  rms = new Amplitude(this);
   rms.input(in);
 
   // patch the AudioIn
+  fft = new FFT(this, bands);
   fft.input(in);
 
   for (int i = 0; i < xval; i ++) {
@@ -54,17 +55,36 @@ void setup() {
 //////////////////////////////////////////////////////////////////////
 void draw() {
   background(0);
+  
+  if (currentScene == Scene.TEST) {
+    drawTestPattern();
+  } else if (currentScene == Scene.FFT_BARS) {
+    drawFftBars();
+  }
+  
+  server.sendScreen();
+}
+
+void drawTestPattern() {
+   for (int i = 0; i < xval; i++) {
+    for (int j = 0; j < yval; j++) {
+      shojis[i][j].status = (i + j) * 10;
+      shojis[i][j].update();
+      shojis[i][j].display();
+    }
+  }
+}
+
+void drawFftBars() {
   fft.analyze(spectrum);
 
-  for (int i = 0; i < xval; i ++) {
-    for (int j = 0; j < yval; j ++) {
+  for (int i = 0; i < xval; i++) {
+    for (int j = 0; j < yval; j++) {
       shojis[i][j].status = (spectrum[i*3]*255*40)/(1+yval-j);
       shojis[i][j].update();
       shojis[i][j].display();
     }
   }
-  
-  server.sendScreen();
 }
 
 
@@ -87,7 +107,7 @@ class Shoji {
     fill += velocity * direction;
     if (fill > 255) {
       direction = -1;
-    } else if (fill<100) {
+    } else if (fill < 100) {
       direction = 1;
     }
   }
