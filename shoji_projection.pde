@@ -54,6 +54,8 @@ void setup() {
 //////////////////////////////////////////////////////////////////////
 void draw() {
   background(0);
+  lights();
+  
   fft.analyze(spectrum);
 
   for (int i = 0; i < xval; i ++) {
@@ -93,8 +95,13 @@ class Shoji {
   }
 
   void display() {
+    pushMatrix();
+    translate(x + w / 2, y + h / 2, 0);
+    rotateY(x);
     fill(35, 90, status);
-    rect(x, y, w, h);
+    rectMode(CENTER);
+    rect(0, 0, w, h);
     fill(0);
+    popMatrix();
   }
 }
