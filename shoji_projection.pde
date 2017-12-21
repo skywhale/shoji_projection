@@ -32,7 +32,6 @@ void setup() {
   println("Started Syphon server.");
   
   in = new AudioIn(this, 0);
-  println("Started Syphon server.");
   in.start();
   println("Started audio input.");
 
