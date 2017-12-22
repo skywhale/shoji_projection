@@ -88,6 +88,11 @@ void draw() {
   
   fft.analyze(spectrum);
   
+  hueValue += 0.1;
+  if (hueValue > 255) {
+    hueValue = 0;
+  }
+  
   boolean inTransition = false;
   if (millis() > transitionStartTimerMillis) {
     inTransition = true;
@@ -236,13 +241,13 @@ class Texture {
   }
 }
 
-  int currentSceneIndex = 0;
-  final Scene[] SCENES = {
-    Scene.TEST_RED_WHITE,
-    Scene.FFT_SOLID,
-    Scene.RANDOM_GRAYSCALE,
-    Scene.FFT_FADE
-  };
+int currentSceneIndex = 0;
+final Scene[] SCENES = {
+  Scene.TEST_RED_WHITE,
+  Scene.FFT_SOLID,
+  Scene.RANDOM_GRAYSCALE,
+  Scene.FFT_FADE
+};
   
 void nextScene() {
   currentSceneIndex = ++currentSceneIndex % SCENES.length;
