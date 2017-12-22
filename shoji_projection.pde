@@ -32,7 +32,6 @@ static final int yval = 6;
 final Shoji[][] shojis = new Shoji[xval][yval];
 
 static final float FRAME_MILLIS = 1000.0 / 24;
-static final float ANIMATION_START_DELAY_MILLIS = 3000;
 
 //////////////////////////////////////////////////////////////////////
 void setup() {
@@ -72,8 +71,6 @@ void setup() {
           new Rect(360 / 4 * (i % 4), 720 / 4 * j, 90, 180),
           dogImage);
       shojis[i][j] = new Shoji(rect, texture);
-      float offsetMillis = ANIMATION_START_DELAY_MILLIS + (i + j) * FRAME_MILLIS;
-      shojis[i][j].startAnimation(AnimationPattern.SPIN, offsetMillis, null);
     }
   }
 }
@@ -83,12 +80,25 @@ void movieEvent(Movie m) {
 }
 
 //////////////////////////////////////////////////////////////////////
+int transitionStartTimerMillis = 0;
+int transitionTimerMillis = MAX_INT;
 void draw() {
   background(0);
   lights();
   
   fft.analyze(spectrum);
   
+  boolean inTransition = false;
+  if (millis() > transitionStartTimerMillis) {
+    inTransition = true;
+    transitionStartTimerMillis = millis() + 20000;
+    transitionTimerMillis = millis() + int(35 * FRAME_MILLIS / 3);
+  }
+  if (millis() > transitionTimerMillis) {
+    nextScene();
+    transitionTimerMillis = MAX_INT;
+  }
+ 
   for (int i = 0; i < xval; i++) {
     for (int j = 0; j < yval; j++) {
       Shoji shoji = shojis[i][j];
@@ -107,6 +117,12 @@ void draw() {
       } else if (currentScene == Scene.FFT_SOLID) {
         fftSolidPattern(shoji, i, j);
       }
+      
+      if (inTransition) {
+        float offsetMillis = (i + j) * FRAME_MILLIS;
+        shoji.startAnimation(AnimationPattern.SPIN, offsetMillis, null);
+      }
+
       shoji.display();
     }
   }
@@ -220,6 +236,20 @@ class Texture {
   }
 }
 
+  int currentSceneIndex = 0;
+  final Scene[] SCENES = {
+    Scene.TEST_RED_WHITE,
+    Scene.FFT_SOLID,
+    Scene.RANDOM_GRAYSCALE,
+    Scene.FFT_FADE
+  };
+  
+void nextScene() {
+  currentSceneIndex = ++currentSceneIndex % SCENES.length;
+  currentScene = SCENES[currentSceneIndex];
+  println(currentSceneIndex);
+}
+
 enum AnimationPattern {
   NONE,
   SPIN
@@ -233,7 +263,6 @@ class Shoji {
   private AnimationPattern pattern = AnimationPattern.NONE;
   private Texture nextTexture = null;
   private float offsetMillis;
-  
   private float randomVelocity;
   private float randomDirection = 1;
   private float randomFill = 0;
@@ -247,7 +276,7 @@ class Shoji {
 
   void startAnimation(AnimationPattern pattern, float offsetMillis, Texture nextTexture) {
     this.pattern = pattern;
-    this.offsetMillis = offsetMillis;
+    this.offsetMillis = millis() + offsetMillis;
     this.nextTexture = nextTexture;
   }
 
@@ -269,18 +298,20 @@ class Shoji {
     if (pattern == AnimationPattern.SPIN) {
       float t = getAnimationTime(35 * FRAME_MILLIS);
       rotateY(PI * 3 * t);
-      if (t >= 1./3 && nextTexture != null) {
-        texture = nextTexture;
+      if (t >= 1./3) {
+        if (nextTexture != null) {
+          texture = nextTexture;
+        }
       }
     }
   }
-  
+
   private float getAnimationTime(float durationMillis) {
     float now = millis();
     float t = (now - offsetMillis) / durationMillis;
     return EasingFunctions.easeInOutQuad(constrain(t, 0, 1));
   }
-  
+
   void display() {
     pushMatrix();
     translate(rect.getCenter().x, rect.getCenter().y, 0);
@@ -312,10 +343,10 @@ class Shoji {
 }
 
 //////////////////////////////////////////////////////////////////////
-int rangeFactor = 1;
-float hueValue = 50;
-float saturationValue = 250;
-float sensitivityValue = 100;
+int rangeFactor = 3;
+float hueValue = 120;
+float saturationValue = 90;
+float sensitivityValue = 150;
 void oscEvent(OscMessage oscMessage) {
   println(oscMessage);
 
