@@ -13,12 +13,15 @@ enum Scene {
 }
 Scene currentScene = Scene.TEST;
 
-int bands = 256;
-float[] spectrum = new float[bands];
+static final int bands = 256;
+final float[] spectrum = new float[bands];
 
-int xval = 16;
-int yval = 6;
-Shoji[][] shojis = new Shoji[xval][yval];
+static final int xval = 16;
+static final int yval = 6;
+final Shoji[][] shojis = new Shoji[xval][yval];
+
+static final float FRAME_MILLIS = 1000.0 / 24;
+static final float ANIMATION_START_DELAY_MILLIS = 3000;
 
 //////////////////////////////////////////////////////////////////////
 void setup() {
@@ -45,7 +48,9 @@ void setup() {
 
   for (int i = 0; i < xval; i ++) {
     for (int j = 0; j < yval; j ++) {
-      shojis[i][j] = new Shoji(width/xval*i, height/yval*j, width/xval, height/yval, random(1)+0.1);
+      shojis[i][j] = new Shoji(
+          width/xval*i, height/yval*j, width/xval, height/yval,
+          ANIMATION_START_DELAY_MILLIS + (i + j) * FRAME_MILLIS);
     }
   }
 }
@@ -68,8 +73,7 @@ void draw() {
 void drawTestPattern() {
    for (int i = 0; i < xval; i++) {
     for (int j = 0; j < yval; j++) {
-      shojis[i][j].status = (i + j) * 10;
-      shojis[i][j].update();
+      shojis[i][j].colorValue = (i + j) * 10;
       shojis[i][j].display();
     }
   }
@@ -80,43 +84,39 @@ void drawFftBars() {
 
   for (int i = 0; i < xval; i++) {
     for (int j = 0; j < yval; j++) {
-      shojis[i][j].status = (spectrum[i*3]*255*40)/(1+yval-j);
-      shojis[i][j].update();
+      shojis[i][j].colorValue = (spectrum[i*3]*255*40)/(1+yval-j);
       shojis[i][j].display();
     }
   }
 }
 
-
 //////////////////////////////////////////////////////////////////////
 class Shoji {
-  float x, y, w, h, fill, velocity;
-  int direction = 1;
-  float status = 0;
+  float x, y, w, h, animationStart;
+  float colorValue = 0;
 
-  Shoji (float _x, float _y, float _w, float _h, float _velocity) {
-    fill = 0;
-    x = _x;
-    y = _y;
-    w = _w;
-    h = _h;
-    velocity = _velocity;
-  }
+  static final float ANIMATION_DURATION_MILLIS = 35 * FRAME_MILLIS;
 
-  void update() {
-    fill += velocity * direction;
-    if (fill > 255) {
-      direction = -1;
-    } else if (fill < 100) {
-      direction = 1;
-    }
+  Shoji (float x, float y, float w, float h, float animationStart) {
+    this.x = x;
+    this.y = y;
+    this.w = w;
+    this.h = h;
+    this.animationStart = animationStart;
   }
 
   void display() {
     pushMatrix();
     translate(x + w / 2, y + h / 2, 0);
-    rotateY(x);
-    fill(35, 90, status);
+
+    float now = millis();
+    float animationTime = now - animationStart;
+    if (animationTime >= 0 && animationTime < ANIMATION_DURATION_MILLIS) {
+      float intensity = EasingFunctions.easeInOutQuad(animationTime / ANIMATION_DURATION_MILLIS);
+      rotateY(PI * 3 * intensity);
+    }
+
+    fill(35, 90, colorValue);
     beginShape(QUADS);
     normal(0, 0, 1);
     vertex(-w/2, -h/2, 0);
