@@ -1,9 +1,11 @@
 import codeanticode.syphon.*;
 import processing.sound.*;
 import processing.video.*;
+import oscP5.*;
+import netP5.*;
 
 SyphonServer server;
-
+OscP5 oscP5;
 FFT fft;
 AudioIn in;
 Amplitude rms;
@@ -15,9 +17,12 @@ Movie dogRunMovie;
 enum Scene {
   TEST_COLORFUL,
   TEST_RED_WHITE,
-  FFT_BARS
+  RANDOM_GRAYSCALE,
+  RANDOM_COLOR,
+  FFT_FADE,
+  FFT_SOLID
 }
-Scene currentScene = Scene.FFT_BARS;
+Scene currentScene = Scene.RANDOM_GRAYSCALE;
 
 static final int bands = 256;
 final float[] spectrum = new float[bands];
@@ -40,6 +45,9 @@ void setup() {
   server = new SyphonServer(this, "Processing Syphon");
   println("Started Syphon server.");
 
+  oscP5 = new OscP5(this, 12000);
+  println("Started OscP5 server.");
+
   in = new AudioIn(this, 0);
   in.start();
   println("Started audio input.");
@@ -55,8 +63,8 @@ void setup() {
   dogImage = loadImage("data/dog.jpg");
 
   // FIXME: This crashes the program.
-  dogIdleMovie = new Movie(this, "data/dog_run.mov");
-  dogIdleMovie.loop();
+  //dogIdleMovie = new Movie(this, "data/dog_run.mov");
+  //dogIdleMovie.loop();
 
   for (int i = 0; i < xval; i ++) {
     for (int j = 0; j < yval; j ++) {
@@ -84,14 +92,23 @@ void draw() {
   
   for (int i = 0; i < xval; i++) {
     for (int j = 0; j < yval; j++) {
+      Shoji shoji = shojis[i][j];
+      float intensity = (spectrum[(i*rangeFactor)]*255*sensitivityValue)/(1+yval-j)*2;
+      shoji.updateRandom(intensity);
       if (currentScene == Scene.TEST_COLORFUL) {
-        testColorfulPattern(shojis[i][j], i, j);
+        testColorfulPattern(shoji, i, j);
       } else if (currentScene == Scene.TEST_RED_WHITE) {
-        testRedWhitePattern(shojis[i][j], i, j);
-      } else if (currentScene == Scene.FFT_BARS) {
-        fttBarPattern(shojis[i][j], i, j);
+        testRedWhitePattern(shoji, i, j);
+      } else if (currentScene == Scene.RANDOM_GRAYSCALE) {
+        randomGrayscalePattern(shoji);
+      } else if (currentScene == Scene.RANDOM_COLOR) {
+        randomColorPattern(shoji);
+      } else if (currentScene == Scene.FFT_FADE) {
+        fftFadePattern(shoji, i, j);
+      } else if (currentScene == Scene.FFT_SOLID) {
+        fftSolidPattern(shoji, i, j);
       }
-      shojis[i][j].display();
+      shoji.display();
     }
   }
 
@@ -105,9 +122,25 @@ void testColorfulPattern(Shoji shoji, int x, int y) {
 void testRedWhitePattern(Shoji shoji, int x, int y) {
   shoji.setColor(color(0, (x+y)%2 == 0 ? 255 : 0, 150));
 }
+  
+void randomGrayscalePattern(Shoji shoji) {
+  shoji.setColor(color(shoji.randomFill));
+}
 
-void fttBarPattern(Shoji shoji, int x, int y) {
-  shoji.setColor(color(x*5, 120, (spectrum[x*3]*255*40)/(1+yval-y)));
+void randomColorPattern(Shoji shoji) {
+  shoji.setColor(color(hueValue, saturationValue, shoji.randomFill));
+}
+
+void fftFadePattern(Shoji shoji, int x, int y) {
+  shoji.setColor(color(hueValue + y/20, saturationValue, shoji.randomValue));
+}
+
+void fftSolidPattern(Shoji shoji, int x, int y) {
+  if (shoji.randomValue > 50) {
+    shoji.setColor(color(hueValue, saturationValue, 255));
+  } else {
+    shoji.setColor(color(0));
+  }
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -202,9 +235,15 @@ class Shoji {
   private Texture nextTexture = null;
   private float offsetMillis;
   
+  private float randomVelocity;
+  private float randomDirection = 1;
+  private float randomFill = 0;
+  private float randomValue = 0;
+
   Shoji(Rect rect, Texture texture) {
     this.rect = rect;
     this.texture = texture;
+    this.randomVelocity = random(1) + 0.1;
   }
 
   void startAnimation(AnimationPattern pattern, float offsetMillis, Texture nextTexture) {
@@ -216,7 +255,17 @@ class Shoji {
   void setColor(color c) {
     texture = new Texture(c);
   }
-  
+
+  void updateRandom(float intensity) {
+    randomFill += randomVelocity * randomDirection;
+    if (randomFill > 255) {
+      randomDirection = -1;
+    } else if (randomFill < 100) {
+      randomDirection = 1;
+    }
+    randomValue = (intensity + randomValue * 5) / 6;
+  }
+
   void update() {
     if (pattern == AnimationPattern.SPIN) {
       float t = getAnimationTime(35 * FRAME_MILLIS);
@@ -260,5 +309,39 @@ class Shoji {
     
     texture.clear();
     popMatrix();
+  }
+}
+
+//////////////////////////////////////////////////////////////////////
+int rangeFactor = 1;
+float hueValue = 50;
+float saturationValue = 250;
+float sensitivityValue = 100;
+void oscEvent(OscMessage oscMessage) {
+  println(oscMessage);
+
+  if (oscMessage.checkAddrPattern("/1/multipush1/1/1")) {
+    currentScene = Scene.RANDOM_GRAYSCALE;
+  }
+  if (oscMessage.checkAddrPattern("/1/multipush1/1/2")) {
+    currentScene = Scene.RANDOM_COLOR;
+  }
+  if (oscMessage.checkAddrPattern("/1/multipush1/1/3")) {
+    currentScene = Scene.FFT_FADE;
+  }
+  if (oscMessage.checkAddrPattern("/1/multipush1/1/4")) {
+    currentScene = Scene.FFT_SOLID;
+  }
+  if (oscMessage.checkAddrPattern("/1/fader5")) {
+    rangeFactor = int(oscMessage.get(0).floatValue() * 10);
+  }
+  if (oscMessage.checkAddrPattern("/1/fader1")) {
+    hueValue = oscMessage.get(0).floatValue() * 255;
+  }
+  if (oscMessage.checkAddrPattern("/1/fader2")) {
+    saturationValue = oscMessage.get(0).floatValue() * 255;
+  }
+  if (oscMessage.checkAddrPattern("/1/fader3")) {
+    sensitivityValue = int(1 + oscMessage.get(0).floatValue() * 255);
   }
 }
