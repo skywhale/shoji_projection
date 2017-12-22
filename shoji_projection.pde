@@ -11,10 +11,11 @@ PImage dogImage;  // 360 x 720
 Movie snowMovie;  // 1280 x 720 
 
 enum Scene {
-  TEST,
+  TEST_COLORFUL,
+  TEST_RED_WHITE,
   FFT_BARS
 }
-Scene currentScene = Scene.TEST;
+Scene currentScene = Scene.TEST_RED_WHITE;
 
 static final int bands = 256;
 final float[] spectrum = new float[bands];
@@ -74,33 +75,34 @@ void draw() {
   background(0);
   lights();
   
-  if (currentScene == Scene.TEST) {
-    drawTestPattern();
-  } else if (currentScene == Scene.FFT_BARS) {
-    drawFftBars();
-  }
+  fft.analyze(spectrum);
   
+  for (int i = 0; i < xval; i++) {
+    for (int j = 0; j < yval; j++) {
+      if (currentScene == Scene.TEST_COLORFUL) {
+        testColorfulPattern(shojis[i][j], i, j);
+      } else if (currentScene == Scene.TEST_RED_WHITE) {
+        testRedWhitePattern(shojis[i][j], i, j);
+      } else if (currentScene == Scene.FFT_BARS) {
+        fttBarPattern(shojis[i][j], i, j);
+      }
+      shojis[i][j].display();
+    }
+  }
+
   server.sendScreen();
 }
 
-void drawTestPattern() {
-   for (int i = 0; i < xval; i++) {
-    for (int j = 0; j < yval; j++) {
-      shojis[i][j].setColor(color((i + j) * 10, 255, 255));
-      shojis[i][j].display();
-    }
-  }
+void testColorfulPattern(Shoji shoji, int x, int y) {
+  shoji.setColor(color((x+y) * 10, 255, 150));
 }
 
-void drawFftBars() {
-  fft.analyze(spectrum);
+void testRedWhitePattern(Shoji shoji, int x, int y) {
+  shoji.setColor(color(0, (x+y)%2 == 0 ? 255 : 0, 150));
+}
 
-  for (int i = 0; i < xval; i++) {
-    for (int j = 0; j < yval; j++) {
-      shojis[i][j].setColor(color(35, 90, spectrum[i*3]*255*40)/(1+yval-j));
-      shojis[i][j].display();
-    }
-  }
+void fttBarPattern(Shoji shoji, int x, int y) {
+  shoji.setColor(color(35, 90, spectrum[x*3]*255*40) / (1+yval-y));
 }
 
 //////////////////////////////////////////////////////////////////////
