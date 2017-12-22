@@ -117,8 +117,13 @@ class Shoji {
     translate(x + w / 2, y + h / 2, 0);
     rotateY(x);
     fill(35, 90, status);
-    rectMode(CENTER);
-    rect(0, 0, w, h);
+    beginShape(QUADS);
+    normal(0, 0, 1);
+    vertex(-w/2, -h/2, 0);
+    vertex( w/2, -h/2, 0);
+    vertex( w/2,  h/2, 0);
+    vertex(-w/2,  h/2, 0);
+    endShape();
     fill(0);
     popMatrix();
   }
