@@ -15,7 +15,7 @@ enum Scene {
   TEST_RED_WHITE,
   FFT_BARS
 }
-Scene currentScene = Scene.TEST_RED_WHITE;
+Scene currentScene = Scene.FFT_BARS;
 
 static final int bands = 256;
 final float[] spectrum = new float[bands];
@@ -69,7 +69,6 @@ void setup() {
   }
 }
 
-
 //////////////////////////////////////////////////////////////////////
 void draw() {
   background(0);
@@ -102,7 +101,7 @@ void testRedWhitePattern(Shoji shoji, int x, int y) {
 }
 
 void fttBarPattern(Shoji shoji, int x, int y) {
-  shoji.setColor(color(35, 90, spectrum[x*3]*255*40) / (1+yval-y));
+  shoji.setColor(color(x*5, 120, (spectrum[x*3]*255*40)/(1+yval-y)));
 }
 
 //////////////////////////////////////////////////////////////////////
