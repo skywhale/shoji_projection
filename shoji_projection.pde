@@ -9,10 +9,10 @@ OscP5 oscP5;
 FFT fft;
 AudioIn in;
 Amplitude rms;
-PImage dogImage;  // 360 x 720
-Movie dogIdleMovie; 
-Movie dogPeepMovie; 
-Movie dogRunMovie; 
+PImage dogImage;
+Movie dogIdleMovie;
+Movie dogPeepMovie;
+Movie dogRunMovie;
 
 enum Scene {
   TEST_COLORFUL,
@@ -62,8 +62,7 @@ void setup() {
 
   dogImage = loadImage("data/dog.jpg");
 
-  // FIXME: This crashes the program.
-  //dogIdleMovie = new Movie(this, "data/dog_run.mov");
+  //dogIdleMovie = new Movie(this, "data/dog_idle.mp4");
   //dogIdleMovie.loop();
 
   for (int i = 0; i < xval; i ++) {
@@ -323,13 +322,13 @@ void oscEvent(OscMessage oscMessage) {
   if (oscMessage.checkAddrPattern("/1/multipush1/1/1")) {
     currentScene = Scene.RANDOM_GRAYSCALE;
   }
-  if (oscMessage.checkAddrPattern("/1/multipush1/1/2")) {
+  if (oscMessage.checkAddrPattern("/1/multipush1/2/1")) {
     currentScene = Scene.RANDOM_COLOR;
   }
-  if (oscMessage.checkAddrPattern("/1/multipush1/1/3")) {
+  if (oscMessage.checkAddrPattern("/1/multipush1/3/1")) {
     currentScene = Scene.FFT_FADE;
   }
-  if (oscMessage.checkAddrPattern("/1/multipush1/1/4")) {
+  if (oscMessage.checkAddrPattern("/1/multipush1/4/1")) {
     currentScene = Scene.FFT_SOLID;
   }
   if (oscMessage.checkAddrPattern("/1/fader5")) {
