@@ -8,7 +8,9 @@ FFT fft;
 AudioIn in;
 Amplitude rms;
 PImage dogImage;  // 360 x 720
-Movie snowMovie;  // 1280 x 720 
+Movie dogIdleMovie; 
+Movie dogPeepMovie; 
+Movie dogRunMovie; 
 
 enum Scene {
   TEST_COLORFUL,
@@ -37,7 +39,7 @@ void setup() {
 
   server = new SyphonServer(this, "Processing Syphon");
   println("Started Syphon server.");
-  
+
   in = new AudioIn(this, 0);
   in.start();
   println("Started audio input.");
@@ -51,10 +53,10 @@ void setup() {
   fft.input(in);
 
   dogImage = loadImage("data/dog.jpg");
-  
+
   // FIXME: This crashes the program.
-  //snowMovie = new Movie(this, "data/snow.mp4");
-  //snowMovie.loop();
+  dogIdleMovie = new Movie(this, "data/dog_run.mov");
+  dogIdleMovie.loop();
 
   for (int i = 0; i < xval; i ++) {
     for (int j = 0; j < yval; j ++) {
@@ -67,6 +69,10 @@ void setup() {
       shojis[i][j].startAnimation(AnimationPattern.SPIN, offsetMillis, null);
     }
   }
+}
+
+void movieEvent(Movie m) {
+  m.read();
 }
 
 //////////////////////////////////////////////////////////////////////
